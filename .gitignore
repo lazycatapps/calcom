@@ -1,0 +1,6 @@
+.env
+*.lpk
+docker-compose.yml
+docker-compose.yaml
+.lzc-dtl-cache.json
+docker/

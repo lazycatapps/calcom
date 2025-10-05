@@ -1,0 +1,206 @@
+# app 的唯一 id,上架到商店需要保证不要冲突,尽量使用开发者自己的域名作为后缀.
+package: cloud.lazycat.app.liu.calcom
+# app 的版本
+version: 5.7.1
+
+name: cal.com
+keyword: calendar,booking,scheduling,日程,预约
+description: 开源日程安排和预约管理平台
+
+# 软件名称,会显示在启动器之类的地方
+locales:
+  zh:
+    name: cal.com 日程管理
+    description: |
+      ## cal.com - 开源日程安排平台
+
+      cal.com 是一个开源的日程安排和预约管理平台，提供灵活的日程调度功能。
+
+      **官方网站：** https://cal.com
+
+      **仓库地址：** https://github.com/lazycatapps/calcom.git
+
+      ## 主要功能
+
+      - 📅 智能日程安排和预约管理
+      - 🔗 多种日历集成 (Google Calendar, Outlook 等)
+      - 🎨 可自定义的预约页面
+      - 📊 团队协作和日程管理
+      - 🔌 丰富的第三方集成 (Zoom, Google Meet 等)
+      - 📧 自动邮件提醒
+      - 🌐 多语言支持
+
+      ## 使用说明
+
+      1. 首次访问时需要注册账号
+      2. 配置您的日历集成
+      3. 创建预约类型和日程规则
+      4. 分享您的预约链接给他人
+      5. 管理预约和日程
+
+  en:
+    name: cal.com
+    description: |
+      ## cal.com - Open Source Scheduling Platform
+
+      cal.com is an open-source scheduling and booking platform that provides flexible calendar scheduling capabilities.
+
+      **Official website:** https://cal.com
+
+      **Repository:** https://github.com/lazycatapps/calcom.git
+
+      ## Main Features
+
+      - 📅 Smart scheduling and booking management
+      - 🔗 Multiple calendar integrations (Google Calendar, Outlook, etc.)
+      - 🎨 Customizable booking pages
+      - 📊 Team collaboration and schedule management
+      - 🔌 Rich third-party integrations (Zoom, Google Meet, etc.)
+      - 📧 Automatic email reminders
+      - 🌐 Multi-language support
+
+      ## Usage Instructions
+
+      1. Register an account on first visit
+      2. Configure your calendar integrations
+      3. Create booking types and scheduling rules
+      4. Share your booking link with others
+      5. Manage bookings and schedules
+
+# 软件本身的 license
+license: https://github.com/calcom/cal.com?tab=License-1-ov-file
+
+# 软件的主页,会在商店等地方体现
+homepage: https://github.com/calcom/cal.com
+
+# lpk 的作者,会在商店等地方体现
+author: liu
+
+# application 作为一个特殊的 container 运行，对应的 service 名称为固定的`app`， 其他 service 可以通过此名称与 app 进行通讯
+application:
+  # 是否存在后台任务， 若存在则系统不会对此 app 进行主动休眠等操作
+  background_task: true
+
+  # 期望的 app 域名，如果系统中已经有对应域名则会提示用户选择其他域名。 最终 app 分配到的域名以/lzcapp/run/app.subdomain 为准
+  subdomain: calcom
+
+  routes:
+    - /=http://calcom:3000
+
+  # 页面本身是有鉴权的，所以可以不需要 lazycat 的鉴权。
+  # 如果不开启该选项，会导致 OAuth2.0 认证失败，中间多了一个鉴权页面。
+  public_path:
+    - /                         # 无需登录即可访问
+
+  depends_on:
+    - calcom
+
+  # 因为该方法无法提供鉴权， 所以不建议开启
+  # ingress:
+  #   # Prisma Studio 管理界面
+  #   - protocol: tcp
+  #     port: 5555
+  #     service: studio
+  #     description: Prisma Studio 数据库管理
+  #     publish_port: "5555" # 对外暴露的端口号
+
+  # 是否启用多实例
+  multi_instance: false
+
+services:
+  database:
+    # lzc-cli appstore copy-image postgres
+    image: registry.lazycat.cloud/liu/library/postgres:d654144cefca4d81
+    environment:
+      - POSTGRES_USER=unicorn_user
+      - POSTGRES_PASSWORD=magical_password
+      - POSTGRES_DB=calendso
+    binds:
+      - /lzcapp/var/postgres:/var/lib/postgresql/data
+    health_check:
+      test:
+        - CMD-SHELL
+        - pg_isready -d calendso -U unicorn_user
+      start_period: 20s
+
+  calcom:
+    # lzc-cli appstore copy-image calcom.docker.scarf.sh/calcom/cal.com
+    image: registry.lazycat.cloud/liu/calcom/cal.com:350c81c4180e9653
+    environment:
+      # License 相关
+      - NEXT_PUBLIC_LICENSE_CONSENT=
+      - LICENSE=
+      # 应用 URL 配置
+      - NEXT_PUBLIC_WEBAPP_URL=https://calcom.${LAZYCAT_BOX_NAME}.heiyu.space
+      - NEXT_PUBLIC_API_V2_URL=https://calcom.${LAZYCAT_BOX_NAME}.heiyu.space/api/v2
+      - NEXT_PUBLIC_WEBSITE_TERMS_URL=
+      - NEXT_PUBLIC_WEBSITE_PRIVACY_POLICY_URL=
+      - NEXT_PUBLIC_SINGLE_ORG_SLUG=
+      # 组织功能
+      - ORGANIZATIONS_ENABLED=
+      # NextAuth 配置
+      - NEXTAUTH_URL=https://calcom.${LAZYCAT_BOX_NAME}.heiyu.space
+      # 安全密钥 (生产环境建议修改)
+      - NEXTAUTH_SECRET=secret
+      - CALENDSO_ENCRYPTION_KEY=secret
+      # 数据库连接
+      - DATABASE_HOST=database:5432
+      - DATABASE_URL=postgresql://unicorn_user:magical_password@database:5432/calendso
+      - DATABASE_DIRECT_URL=postgresql://unicorn_user:magical_password@database:5432/calendso
+      # 第三方集成
+      - GOOGLE_API_CREDENTIALS={}
+      # 其他配置
+      - CALCOM_TELEMETRY_DISABLED=1
+      - NODE_ENV=production
+      - CSP_POLICY=
+    depends_on:
+      - database
+    health_check:
+      test:
+        - CMD-SHELL
+        # Next.js 使用流式渲染，wget 会卡在等待完整响应
+        # 使用 timeout 强制 3 秒后终止，退出码 0(成功) 或 124(超时) 都视为健康
+        - 'timeout 3 wget --spider -q http://localhost:3000 2>&1; ret=$$?; [ $$ret -eq 0 ] || [ $$ret -eq 124 ]'
+      start_period: 30s
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # 因为无法提供鉴权，所以暂不开启该管理界面
+  # studio:
+  #   # lzc-cli appstore copy-image calcom.docker.scarf.sh/calcom/cal.com
+  #   image: registry.lazycat.cloud/liu/calcom/cal.com:350c81c4180e9653
+  #   environment:
+  #     # License 相关
+  #     - NEXT_PUBLIC_LICENSE_CONSENT=
+  #     - LICENSE=
+  #     # 应用 URL 配置
+  #     - NEXT_PUBLIC_WEBAPP_URL=http://calcom:3000
+  #     - NEXT_PUBLIC_API_V2_URL=http://studio:5555/api/v2
+  #     - NEXT_PUBLIC_WEBSITE_TERMS_URL=
+  #     - NEXT_PUBLIC_WEBSITE_PRIVACY_POLICY_URL=
+  #     - NEXT_PUBLIC_SINGLE_ORG_SLUG=
+  #     # 组织功能
+  #     - ORGANIZATIONS_ENABLED=
+  #     # 安全密钥
+  #     - NEXTAUTH_SECRET=secret
+  #     - CALENDSO_ENCRYPTION_KEY=secret
+  #     # 数据库连接
+  #     - DATABASE_URL=postgresql://unicorn_user:magical_password@database:5432/calendso
+  #     - DATABASE_DIRECT_URL=postgresql://unicorn_user:magical_password@database:5432/calendso
+  #     # 第三方集成
+  #     - GOOGLE_API_CREDENTIALS={}
+  #     # 其他配置
+  #     - CALCOM_TELEMETRY_DISABLED=1
+  #     - NODE_ENV=production
+  #     - CSP_POLICY=
+  #   command: npx prisma studio
+  #   depends_on:
+  #     - database
+  #   health_check:
+  #     test:
+  #       - CMD-SHELL
+  #       - wget --spider -q http://localhost:5555 || exit 1
+  #     start_period: 30s
+  #     interval: 30s
+  #     timeout: 30s
