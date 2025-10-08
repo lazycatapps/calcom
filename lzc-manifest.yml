@@ -116,7 +116,7 @@ services:
       - POSTGRES_PASSWORD=magical_password
       - POSTGRES_DB=calendso
     binds:
-      - /lzcapp/var/postgres:/var/lib/postgresql/data
+      - /lzcapp/var/postgres:/var/lib/postgresql
     health_check:
       test:
         - CMD-SHELL
