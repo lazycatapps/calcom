@@ -1,7 +1,7 @@
 # app 的唯一 id,上架到商店需要保证不要冲突,尽量使用开发者自己的域名作为后缀.
 package: cloud.lazycat.app.liu.calcom
 # app 的版本
-version: 5.7.1
+version: 5.7.1-1
 
 name: cal.com
 keyword: calendar,booking,scheduling,日程,预约
