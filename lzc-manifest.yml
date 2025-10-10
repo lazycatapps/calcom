@@ -1,7 +1,7 @@
 # app 的唯一 id,上架到商店需要保证不要冲突,尽量使用开发者自己的域名作为后缀.
 package: cloud.lazycat.app.liu.calcom
 # app 的版本
-version: 5.7.1-1
+version: 5.6.20
 
 name: cal.com
 keyword: calendar,booking,scheduling,日程,预约
@@ -109,23 +109,24 @@ application:
 
 services:
   database:
-    # lzc-cli appstore copy-image postgres
-    image: registry.lazycat.cloud/liu/library/postgres:d654144cefca4d81
+    # lzc-cli appstore copy-image postgres:17-alpine
+    image: registry.lazycat.cloud/liu/library/postgres:cf54e1c33a8a3b2d
+    restart: always
     environment:
       - POSTGRES_USER=unicorn_user
       - POSTGRES_PASSWORD=magical_password
       - POSTGRES_DB=calendso
     binds:
-      - /lzcapp/var/postgres:/var/lib/postgresql
+      - /lzcapp/var/data/postgresql:/var/lib/postgresql/data
     health_check:
       test:
         - CMD-SHELL
         - pg_isready -d calendso -U unicorn_user
-      start_period: 20s
+      start_period: 30s
 
   calcom:
-    # lzc-cli appstore copy-image calcom.docker.scarf.sh/calcom/cal.com
-    image: registry.lazycat.cloud/liu/calcom/cal.com:350c81c4180e9653
+    # lzc-cli appstore copy-image calcom/cal.com:v5.6.20
+    image: registry.lazycat.cloud/liu/calcom/cal.com:1bd81b16062832bf
     environment:
       # License 相关
       - NEXT_PUBLIC_LICENSE_CONSENT=
@@ -141,15 +142,32 @@ services:
       # NextAuth 配置
       - NEXTAUTH_URL=https://calcom.${LAZYCAT_BOX_NAME}.heiyu.space
       # 安全密钥 (生产环境建议修改)
-      - NEXTAUTH_SECRET=secret
-      - CALENDSO_ENCRYPTION_KEY=secret
+      - NEXTAUTH_SECRET=3RTq5Yx9R5ZExhyHWjoR
+      - CALENDSO_ENCRYPTION_KEY=nrBZP5avdxnHOmMku5Oz
       # 数据库连接
       - DATABASE_HOST=database:5432
       - DATABASE_URL=postgresql://unicorn_user:magical_password@database:5432/calendso
       - DATABASE_DIRECT_URL=postgresql://unicorn_user:magical_password@database:5432/calendso
       # 第三方集成
       - GOOGLE_API_CREDENTIALS={}
+      # Used for the Office 365 / Outlook.com Calendar integration
+      - MS_GRAPH_CLIENT_ID=
+      - MS_GRAPH_CLIENT_SECRET=
+      # Used for the Zoom integration
+      - ZOOM_CLIENT_ID=
+      - ZOOM_CLIENT_SECRET=
+      # E-mail settings
+      # Ref: https://github.com/calcom/docker/blob/main/.env.example
+      # Configures the global From: header whilst sending emails.
+      - EMAIL_FROM_NAME=
+      - EMAIL_FROM=
+      # Configure SMTP settings (@see https://nodemailer.com/smtp/).
+      - EMAIL_SERVER_HOST=
+      - EMAIL_SERVER_PORT=
+      - EMAIL_SERVER_USER=
+      - EMAIL_SERVER_PASSWORD=
       # 其他配置
+      # Set this to '1' if you don't want Cal to collect anonymous usage
       - CALCOM_TELEMETRY_DISABLED=1
       - NODE_ENV=production
       - CSP_POLICY=
